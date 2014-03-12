@@ -16,51 +16,56 @@ namespace Intech.Business
         public FileProcessorResult Process(String path)
         {
             FileProcessorResult result = new FileProcessorResult(path);
-
             if (Directory.Exists(path))
-                ProcessDirectory(path, result);
+                process(new DirectoryInfo(path), result,false);
             else
                 throw new Exception("Directory not exists");
 
             return result;
         }
 
-        private void ProcessDirectory(string path, FileProcessorResult result, bool parentIsHidden = false)
+        private void process(DirectoryInfo d, FileProcessorResult fpr, bool isParentHidden)
         {
-            string[] subDirectories = Directory.GetDirectories(path);
-            foreach (var subDirectory in subDirectories)
-                ProcessSubDirectory(subDirectory, result, parentIsHidden);
-
-            string[] files = Directory.GetFiles(path);
-            foreach (var file in files)
-                ProcessFile(file, result, parentIsHidden);
-        }
-
-        private void ProcessSubDirectory(string name, FileProcessorResult result, bool parentIsHidden)
-        {
-            if ((File.GetAttributes(name) & FileAttributes.Hidden) == FileAttributes.Hidden)
+            ++fpr.TotalDirectoryCount;
+            bool thisDirectoryIsHidden=(d.Attributes & FileAttributes.Hidden) != 0;
+            if (thisDirectoryIsHidden)
             {
-                result.HiddenDirectoryCount++;
-                parentIsHidden = true;
+                ++fpr.HiddenDirectoryCount;
             }
 
-            result.TotalDirectoryCount++;
-            ProcessDirectory(name, result, parentIsHidden);
-        }
-
-        private void ProcessFile(string name, FileProcessorResult result, bool parentIsHidden)
-        {
-            if (parentIsHidden)
-                result.UnaccessibleFileCount++;
-
-            if ((File.GetAttributes(name) & FileAttributes.Hidden) == FileAttributes.Hidden)
+            IEnumerable<FileInfo> files = d.EnumerateFiles();
+            IEnumerator<FileInfo> filesenumerator = files.GetEnumerator();
+            try
             {
-                result.HiddenFileCount++;
-                if (!parentIsHidden)
-                    result.UnaccessibleFileCount++;
+                while (filesenumerator.MoveNext())
+                {
+                    FileInfo File = filesenumerator.Current;
+                    fpr.TotalFileCount++;
+                    FileAttributes attr = File.Attributes;
+                    bool isHidden = ((attr & FileAttributes.Hidden) != 0);
+                    
+                    if (isHidden)
+                    {
+                        ++fpr.HiddenFileCount;
+                        ++fpr.UnaccessibleFileCount;
+                    }
+                    else if (isParentHidden)
+                    {
+                        ++fpr.UnaccessibleFileCount;
+                    }                       
+                }
+            }
+            finally
+            {
+                 filesenumerator.Dispose();
+            }
+   
+            IEnumerable<DirectoryInfo> directories = d.EnumerateDirectories();
+            foreach( var dir in directories)
+            {
+                process(dir, fpr, isParentHidden );
             }
 
-            result.TotalFileCount++;
         }
     }
 }
