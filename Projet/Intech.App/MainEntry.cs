@@ -13,7 +13,7 @@ namespace Intech.App
         {
             FileProcessor p = new FileProcessor();
             var r = p.Process( "C:\\Temp" );
-            Console.WriteLine( "TotalFileCount == {0}", r.TotalFileCount );
+            Console.WriteLine( "TotalFileCount = {0}", r.TotalFileCount );
             Console.WriteLine( "TotalDirectoryCount = {0}", r.TotalDirectoryCount );
             Console.WriteLine( "HiddenFileCount = {0}", r.HiddenFileCount );
             Console.WriteLine( "HiddenDirectoryCount = {0}", r.HiddenDirectoryCount );
